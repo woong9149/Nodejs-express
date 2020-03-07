@@ -5,10 +5,15 @@ const sanitizeHtml = require('sanitize-html');
 const qs = require('querystring');
 const fs = require('fs');
 const template = require('../lib/template.js')
+const auth = require('../lib/auth');
 
 //순서가 중요함. 예약어 처럼 사용한다.
 router.get('/create',function(request,response){
-  
+  //로그인 상태가 아니면 튕겨내기
+  if(!auth.isOwner(request,response)){
+    response.redirect('/');
+    return false;
+  }
     var title = 'WEB - create';
     var list = template.list(request.list);
     var html = template.HTML(title, list, `
@@ -21,13 +26,17 @@ router.get('/create',function(request,response){
           <input type="submit">
         </p>
       </form>
-    `, '');
+    `, '', auth.statusUI(request,response));
     response.send(html);
   
   })
   
   router.post('/create',function(request,response){
-
+ //로그인 상태가 아니면 튕겨내기
+ if(!auth.isOwner(request,response)){
+    response.redirect('/');
+    return false;
+  } 
     var post = request.body;
     var title = post.title;
     var description = post.description;
@@ -38,7 +47,11 @@ router.get('/create',function(request,response){
   });
   
   router.get('/update/:pageId',function(request,response){
-   
+    //로그인 상태가 아니면 튕겨내기
+  if(!auth.isOwner(request,response)){
+    response.redirect('/');
+    return false;
+  }
     var filteredId = path.parse(request.params.pageId).base;
     fs.readFile(`data/${filteredId}`, 'utf8', function(err, description){
       var title = request.params.pageId;
@@ -56,7 +69,8 @@ router.get('/create',function(request,response){
           </p>
         </form>
         `,
-        `<a href="/topic/create">create</a> <a href="/topic/update/${title}">update</a>`
+        `<a href="/topic/create">create</a> <a href="/topic/update/${title}">update</a>`,
+        auth.statusUI(request,response)
       );
       response.send(html);
     
@@ -81,6 +95,11 @@ router.get('/create',function(request,response){
       });
   });
   */
+  //로그인 상태가 아니면 튕겨내기
+  if(!auth.isOwner(request,response)){
+    response.redirect('/');
+    return false;
+  }
   var post = request.body;
   var id = post.id;
   var title = post.title;
@@ -95,7 +114,11 @@ router.get('/create',function(request,response){
   })
   
   router.post('/delete',function(request,response){
-   
+    //로그인 상태가 아니면 튕겨내기
+  if(!auth.isOwner(request,response)){
+    response.redirect('/');
+    return false;
+  }
     var post = request.body;
     var id = post.id;
     var filteredId = path.parse(id).base;
@@ -121,11 +144,12 @@ router.get('/create',function(request,response){
       var html = template.HTML(sanitizedTitle, list,
         `<h2>${sanitizedTitle}</h2>${sanitizedDescription}`,
         ` <a href="/topic/create">create</a>
-          <a href/topic/update/${sanitizedTitle}">update</a>
+          <a href="/topic/update/${sanitizedTitle}">update</a>
           <form action="/topic/delete" method="post">
             <input type="hidden" name="id" value="${sanitizedTitle}">
             <input type="submit" value="delete">
-          </form>`
+          </form>`,
+          auth.statusUI(request,response)
       );
       response.send(html);
     }

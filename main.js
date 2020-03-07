@@ -3,20 +3,31 @@ const app = express(); //express는 application 객체를 리턴해준다
 const fs = require('fs');
 const bodyParser = require('body-parser');
 const compression = require('compression');
-const indexRouter = require('./routes/index')
-const topicRouter = require('./routes/topic');
+const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(compression());//미들웨어를 리턴해서 app.use에 장착
+app.use(session({
+  secret : 'keyboard cat',
+  resave : false,
+  saveUninitialized: true,
+  store: new FileStore()
+}))
 app.get('*',function(request, response, next){
   fs.readdir('./data',function(error,filelist){
     request.list = filelist;
     next();//다음 미들웨어를 실행함.
   });
 });
+
+const indexRouter = require('./routes/index')
+const topicRouter = require('./routes/topic');
+const authRouter = require('./routes/auth');
 app.use('/',indexRouter);
 app.use('/topic',topicRouter);
+app.use('/auth',authRouter);
 
 //없는 페이지를 찾을 때 에러 처리
 app.use(function(req,res,next){

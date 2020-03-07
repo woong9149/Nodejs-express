@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const template = require('../lib/template.js')
 // app.get('/',(req,res)=> res.send('Hello World!!'));
+const auth = require('../lib/auth.js');
+
 router.get('/',function(request,response){
   
     var title = 'Welcome';
@@ -11,7 +13,8 @@ router.get('/',function(request,response){
       `<h2>${title}</h2>${description}
       <img src="/images/coding.jpg" style="width:400px; margin-top:10px; display:block">
       `,
-      `<a href="/topic/create">create</a>`
+      `<a href="/topic/create">create</a>`,
+      auth.statusUI(request,response)
     );
     response.send(html);
 
