@@ -6,11 +6,11 @@ const qs = require('querystring');
 const fs = require('fs');
 const template = require('../lib/template.js')
 
-var authData = {
-  email:"egoing777@gmail.com",
-  password:"111111",
-  nickname:"egoing"
-}
+// var authData = {
+//   email:"egoing777@gmail.com",
+//   password:"111111",
+//   nickname:"egoing"
+// }
 
 router.get('/login',function(request,response){
   
@@ -31,6 +31,7 @@ router.get('/login',function(request,response){
 
 })
 
+/*
 router.post('/login_process',function(request,response){
 
   var post = request.body;
@@ -51,6 +52,7 @@ router.post('/login_process',function(request,response){
   }
   
 });
+*/
 
 router.get('/logout',function(request,response){
   request.session.destroy(function(err){
