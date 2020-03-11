@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const compression = require('compression');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
+const flash = require('connect-flash');
 
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({extended: false}));
@@ -12,89 +13,26 @@ app.use(compression());//미들웨어를 리턴해서 app.use에 장착
 app.use(session({
   secret : 'keyboard cat',
   resave : false,
-  saveUninitialized: true,
-  store: new FileStore()
+  saveUninitialized: true
+  // store: new FileStore()
 }))
 
-var authData = {
-  email:"egoing777@gmail.com",
-  password:"111111",
-  nickname:"egoing"
-}
-
-//passport 설치
-const passport = require('passport'),
-  LocalStrategy = require('passport-local').Strategy;
-
-  //passport를 express에 설치
-app.use(passport.initialize());
-//session을 사용하겠다는 것.
-app.use(passport.session());
-
-passport.serializeUser(function(user,done){//로그인애 성공했을때 호출되어 사용자의 식별자를 session store에 저장한다.
-  console.log('serializeUser: ', user);
-  done(null, user.email);//두번째인자는 사용자의 식별자
-});
-
-passport.deserializeUser(function(id,done){//로그인 후 페이지 방문할때마다 호출됨. id값으로 사용자의 데이터를 가져옴.
-  console.log('deserializeUser: ', id);
-  done(null, authData);
+app.use(flash());//flash는 내부적으로 session을 쓰기때문에 session다음에 미들웨어를 실행해야함
+app.get('/flash', function(req,res){
+  //set a flash message by passing the key, followed by the value, tothe req.flash()
+  req.flash('info','Flash is back!');
+  // res.redirect('/');
+  res.send('flash');
 })
 
-passport.use(new LocalStrategy(
-  {
-    usernameField: 'email',
-    passwordField: 'password'
-  },
-  function (username, password, done){
-    console.log('LocalStrategy: ', username+', '+password);
-    if(username === authData.email){
-      console.log(1);
-      if(password === authData.password){
-        console.log(2);
-        return done(null,authData);
-      }else{
-        console.log(3);
-        return done(null,false,{
-          message: 'Incorrect password.'
-        })
-      }
-    }else{
-      console.log(4);
-      return done(null,false,{
-        message: 'Incorrect username.'
-      });
-    }
-    /*
-    User.findOne({
-      username: username
-    }, function(err,user){
-      if(err){
-        return done(err);
-      }
-      if(!user){
-        return done(null,false,{
-          message: 'Incorrect username.'
-        });
-      }
-      if(!user.validPassword(password)){
-        return done(null,false,{
-          message: 'Incorrect password.'
-        });
-      }
-      return done(null,user);
-    }
-    );
-    */
-  }
-))
+app.get('/flash-display', function(req,res){
+  var fms = req.flash();
+  res.send(fms)
+})
 
-app.post('/auth/login_process',
-  passport.authenticate('local', {
-      successRedirect : '/',//로그인이 됐을때
-      failureRedirect: '/auth/login'//로그인이 안됐을때
-  })
-)
+var passport = require('./lib/passport')(app);
+
+
 
 app.get('*',function(request, response, next){
   fs.readdir('./data',function(error,filelist){
@@ -105,7 +43,7 @@ app.get('*',function(request, response, next){
 
 const indexRouter = require('./routes/index')
 const topicRouter = require('./routes/topic');
-const authRouter = require('./routes/auth');
+const authRouter = require('./routes/auth')(passport);
 app.use('/',indexRouter);
 app.use('/topic',topicRouter);
 app.use('/auth',authRouter);
