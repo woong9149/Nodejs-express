@@ -6,6 +6,8 @@ const qs = require('querystring');
 const fs = require('fs');
 const template = require('../lib/template.js')
 const auth = require('../lib/auth');
+const db = require('../lib/db');
+const shortid = require('shortid');
 
 //순서가 중요함. 예약어 처럼 사용한다.
 router.get('/create',function(request,response){
@@ -32,6 +34,7 @@ router.get('/create',function(request,response){
   })
   
   router.post('/create',function(request,response){
+
  //로그인 상태가 아니면 튕겨내기
  if(!auth.isOwner(request,response)){
     response.redirect('/');
@@ -40,9 +43,17 @@ router.get('/create',function(request,response){
     var post = request.body;
     var title = post.title;
     var description = post.description;
-    fs.writeFile(`data/${title}`,description, 'utf8',function(err){
-      response.redirect(`/topic/${title}`);
-    });
+    var id = shortid.generate();
+    db.get('topics').push({
+      id:id,
+      title:title,
+      description:description,
+      user_id:request.user.id
+    }).write()
+    response.redirect(`/topic/${id}`);
+    // fs.writeFile(`data/${title}`,description, 'utf8',function(err){
+    //   response.redirect(`/topic/${title}`);
+    // });
     
   });
   
@@ -129,20 +140,20 @@ router.get('/create',function(request,response){
   })
   
   router.get('/:pageId',function(request,response,next){
-  
-    var filteredId = path.parse(request.params.pageId).base;
-    fs.readFile(`data/${filteredId}`, 'utf8', function(err, description){
-    if(err){
-      next(err);
-    }else{
-      var title = request.params.pageId;
-      var sanitizedTitle = sanitizeHtml(title);
-      var sanitizedDescription = sanitizeHtml(description, {
+  var topic = db.get('topics').find({id:request.params.pageId}).value();
+   var user = db.get('users').find({
+     id: topic.user_id
+   }).value();
+      var sanitizedTitle = sanitizeHtml(topic.title);
+      var sanitizedDescription = sanitizeHtml(topic.description, {
         allowedTags:['h1']
       });
       var list = template.list(request.list);
       var html = template.HTML(sanitizedTitle, list,
-        `<h2>${sanitizedTitle}</h2>${sanitizedDescription}`,
+        `<h2>${sanitizedTitle}</h2>
+        ${sanitizedDescription}
+        <p>by ${user.displayName}</p>
+        `,
         ` <a href="/topic/create">create</a>
           <a href="/topic/update/${sanitizedTitle}">update</a>
           <form action="/topic/delete" method="post">
@@ -152,9 +163,7 @@ router.get('/create',function(request,response){
           auth.statusUI(request,response)
       );
       response.send(html);
-    }
-  });
-  
+    
   });
 
 
