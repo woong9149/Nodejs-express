@@ -6,6 +6,7 @@ const compression = require('compression');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
 const flash = require('connect-flash');
+const db = require('./lib/db');
 
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({extended: false}));
@@ -35,10 +36,9 @@ var passport = require('./lib/passport')(app);
 
 
 app.get('*',function(request, response, next){
-  fs.readdir('./data',function(error,filelist){
-    request.list = filelist;
-    next();//다음 미들웨어를 실행함.
-  });
+  request.list = db.get('topics').value();
+   next();//다음 미들웨어를 실행함.
+
 });
 
 const indexRouter = require('./routes/index')
